@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stochastic Gradient Descent</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Stochastic Gradient Descent</h1>
+  <p class="subtitle">
+    Click anywhere to evaluate the function. The compass shows a noisy estimate of
+    the gradient — just like in real SGD! Can you still find the minimum?
+  </p>
+
+  <div class="canvas-wrapper">
+    <canvas id="canvas" width="600" height="600"></canvas>
+    <button id="btn-undo" class="btn-undo">↩ Undo</button>
+    <div class="overlay-panel">
+      <div class="overlay-card value-display">
+        <div class="label">f(x, y)</div>
+        <div class="big-value" id="big-val">—</div>
+      </div>
+      <div class="overlay-card value-display">
+        <div class="label">Best</div>
+        <div class="big-value best" id="big-best">—</div>
+      </div>
+      <div class="overlay-card compass-card">
+        <div class="label">Noisy gradient</div>
+        <canvas id="compass" width="130" height="140"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <nav>
+    <a href="index.html">0th Order</a>
+    <a href="first-order.html">1st Order</a>
+    <a href="sgd.html" class="active">Stochastic GD</a>
+  </nav>
+
+  <script src="shared.js"></script>
+  <script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const compass = document.getElementById("compass");
+    const W = canvas.width, H = canvas.height;
+    const btnUndo = document.getElementById("btn-undo");
+
+    const startX = FN.startCenter[0], startY = FN.startCenter[1];
+    const startVal = FN.fn(startX, startY);
+    const [sGx, sGy] = FN.gradient(startX, startY);
+    const startNgx = sGx + gaussianRandom(0, FN.noiseSigma);
+    const startNgy = sGy + gaussianRandom(0, FN.noiseSigma);
+    let history = [{ x: startX, y: startY, val: startVal, ngx: startNgx, ngy: startNgy }];
+    let bestVal = startVal;
+    let bestPos = [startX, startY];
+    let viewCenter = { x: FN.startCenter[0], y: FN.startCenter[1] };
+    let animating = false;
+    const ANIM_MS = 250;
+
+    function draw(vcx, vcy) {
+      if (vcx === undefined) { vcx = viewCenter.x; vcy = viewCenter.y; }
+      drawBlankCanvasView(ctx, W, H, vcx, vcy);
+      if (history.length > 0) {
+        const cur = history[history.length - 1];
+        const [px, py] = worldToCanvasView(cur.x, cur.y, W, H, vcx, vcy);
+        drawMarker(ctx, px, py, "#222", 6);
+      }
+      drawCenterCrosshair(ctx, W, H);
+    }
+
+    function updateCompass() {
+      if (history.length > 0) {
+        const cur = history[history.length - 1];
+        drawCompass(compass, cur.ngx, cur.ngy, { color: "#c33", label: "−∇f + noise" });
+      } else {
+        compass.getContext("2d").clearRect(0, 0, compass.width, compass.height);
+      }
+    }
+
+    function updateUI() {
+      if (history.length > 0) {
+        const cur = history[history.length - 1];
+        document.getElementById("big-val").textContent = cur.val.toFixed(1);
+        document.getElementById("big-best").textContent = bestVal.toFixed(1);
+      } else {
+        document.getElementById("big-val").textContent = "—";
+        document.getElementById("big-best").textContent = "—";
+      }
+      btnUndo.style.display = history.length > 0 ? "" : "none";
+      updateCompass();
+    }
+
+    function recomputeBest() {
+      bestVal = Infinity; bestPos = null;
+      for (const h of history) {
+        if (h.val < bestVal) { bestVal = h.val; bestPos = [h.x, h.y]; }
+      }
+    }
+
+    function panTo(tx, ty) {
+      const fx = viewCenter.x, fy = viewCenter.y;
+      if (Math.abs(fx - tx) < 0.01 && Math.abs(fy - ty) < 0.01) {
+        viewCenter = { x: tx, y: ty };
+        draw(); animating = false; return;
+      }
+      animating = true;
+      animateView(fx, fy, tx, ty, ANIM_MS,
+        (cx, cy) => draw(cx, cy),
+        () => { viewCenter = { x: tx, y: ty }; animating = false; draw(); }
+      );
+    }
+
+    canvas.addEventListener("click", (e) => {
+      if (animating) return;
+      const rect = canvas.getBoundingClientRect();
+      const px = (e.clientX - rect.left) * (W / rect.width);
+      const py = (e.clientY - rect.top) * (H / rect.height);
+      const [x, y] = canvasToWorldView(px, py, W, H, viewCenter.x, viewCenter.y);
+      const val = FN.fn(x, y);
+      const [gx, gy] = FN.gradient(x, y);
+      const ngx = gx + gaussianRandom(0, FN.noiseSigma);
+      const ngy = gy + gaussianRandom(0, FN.noiseSigma);
+
+      history.push({ x, y, val, ngx, ngy });
+      if (val < bestVal) { bestVal = val; bestPos = [x, y]; }
+      updateUI();
+      panTo(x, y);
+    });
+
+    btnUndo.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (animating || history.length === 0) return;
+      history.pop();
+      recomputeBest();
+      updateUI();
+      const tx = history.length > 0 ? history[history.length - 1].x : FN.startCenter[0];
+      const ty = history.length > 0 ? history[history.length - 1].y : FN.startCenter[1];
+      panTo(tx, ty);
+    });
+
+    draw();
+    updateUI();
+  </script>
+</body>
+</html>

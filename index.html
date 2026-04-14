@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zero-th Order Optimization</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Zero-th Order Optimization</h1>
+  <p class="subtitle">
+    Click anywhere to evaluate the function. Can you find the minimum
+    without any gradient information?
+  </p>
+
+  <div class="canvas-wrapper">
+    <canvas id="canvas" width="600" height="600"></canvas>
+    <button id="btn-undo" class="btn-undo">↩ Undo</button>
+    <div class="overlay-panel">
+      <div class="overlay-card value-display">
+        <div class="label">f(x, y)</div>
+        <div class="big-value" id="big-val">—</div>
+      </div>
+      <div class="overlay-card value-display">
+        <div class="label">Best</div>
+        <div class="big-value best" id="big-best">—</div>
+      </div>
+    </div>
+  </div>
+
+  <nav>
+    <a href="index.html" class="active">0th Order</a>
+    <a href="first-order.html">1st Order</a>
+    <a href="sgd.html">Stochastic GD</a>
+  </nav>
+
+  <script src="shared.js"></script>
+  <script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const W = canvas.width, H = canvas.height;
+    const btnUndo = document.getElementById("btn-undo");
+
+    const startX = FN.startCenter[0], startY = FN.startCenter[1];
+    const startVal = FN.fn(startX, startY);
+    let history = [{ x: startX, y: startY, val: startVal }];
+    let bestVal = startVal;
+    let bestPos = [startX, startY];
+    let viewCenter = { x: FN.startCenter[0], y: FN.startCenter[1] };
+    let animating = false;
+    const ANIM_MS = 250;
+
+    function draw(vcx, vcy) {
+      if (vcx === undefined) { vcx = viewCenter.x; vcy = viewCenter.y; }
+      drawBlankCanvasView(ctx, W, H, vcx, vcy);
+      if (history.length > 0) {
+        const cur = history[history.length - 1];
+        const [px, py] = worldToCanvasView(cur.x, cur.y, W, H, vcx, vcy);
+        drawMarker(ctx, px, py, "#222", 6);
+      }
+      drawCenterCrosshair(ctx, W, H);
+    }
+
+    function updateUI() {
+      if (history.length > 0) {
+        const cur = history[history.length - 1];
+        document.getElementById("big-val").textContent = cur.val.toFixed(1);
+        document.getElementById("big-best").textContent = bestVal.toFixed(1);
+      } else {
+        document.getElementById("big-val").textContent = "—";
+        document.getElementById("big-best").textContent = "—";
+      }
+      btnUndo.style.display = history.length > 0 ? "" : "none";
+    }
+
+    function recomputeBest() {
+      bestVal = Infinity; bestPos = null;
+      for (const h of history) {
+        if (h.val < bestVal) { bestVal = h.val; bestPos = [h.x, h.y]; }
+      }
+    }
+
+    function panTo(tx, ty) {
+      const fx = viewCenter.x, fy = viewCenter.y;
+      if (Math.abs(fx - tx) < 0.01 && Math.abs(fy - ty) < 0.01) {
+        viewCenter = { x: tx, y: ty };
+        draw(); animating = false; return;
+      }
+      animating = true;
+      animateView(fx, fy, tx, ty, ANIM_MS,
+        (cx, cy) => draw(cx, cy),
+        () => { viewCenter = { x: tx, y: ty }; animating = false; draw(); }
+      );
+    }
+
+    canvas.addEventListener("click", (e) => {
+      if (animating) return;
+      const rect = canvas.getBoundingClientRect();
+      const px = (e.clientX - rect.left) * (W / rect.width);
+      const py = (e.clientY - rect.top) * (H / rect.height);
+      const [x, y] = canvasToWorldView(px, py, W, H, viewCenter.x, viewCenter.y);
+      const val = FN.fn(x, y);
+
+      history.push({ x, y, val });
+      if (val < bestVal) { bestVal = val; bestPos = [x, y]; }
+      updateUI();
+      panTo(x, y);
+    });
+
+    btnUndo.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (animating || history.length === 0) return;
+      history.pop();
+      recomputeBest();
+      updateUI();
+      const tx = history.length > 0 ? history[history.length - 1].x : FN.startCenter[0];
+      const ty = history.length > 0 ? history[history.length - 1].y : FN.startCenter[1];
+      panTo(tx, ty);
+    });
+
+    draw();
+    updateUI();
+  </script>
+</body>
+</html>

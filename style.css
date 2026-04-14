@@ -1,0 +1,172 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  background: #f5f5f5;
+  color: #222;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding: 1.2rem;
+}
+
+h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+  color: #111;
+}
+
+.subtitle {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 1rem;
+  text-align: center;
+  max-width: 700px;
+  line-height: 1.4;
+}
+
+/* Canvas wrapper is the main container */
+.canvas-wrapper {
+  position: relative;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: crosshair;
+  flex-shrink: 0;
+}
+
+canvas {
+  display: block;
+}
+
+/* Undo button — top-left of canvas */
+.btn-undo {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 10;
+  pointer-events: auto;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  font-family: inherit;
+  cursor: pointer;
+  color: #333;
+  transition: background 0.15s, opacity 0.15s;
+  display: none;
+}
+
+.btn-undo:hover {
+  background: rgba(240, 240, 240, 0.95);
+}
+
+/* Overlay panel — right side of canvas */
+.overlay-panel {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.overlay-card {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  padding: 0.45rem 0.7rem;
+}
+
+.overlay-card.value-display {
+  text-align: center;
+  min-width: 130px;
+}
+
+.overlay-card .label {
+  font-size: 0.75rem;
+  color: #888;
+  margin-bottom: 0.05rem;
+}
+
+.overlay-card .big-value {
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: #111;
+  line-height: 1.1;
+}
+
+.overlay-card .big-value.best {
+  color: #2a7d2a;
+  font-size: 1.2rem;
+}
+
+/* Compass card */
+.overlay-card.compass-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.3rem;
+}
+
+.overlay-card.compass-card .label {
+  margin-bottom: 0.15rem;
+}
+
+/* Noise input card (SGD) */
+.overlay-card.settings-card {
+  pointer-events: auto;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+  font-size: 0.75rem;
+}
+
+.overlay-card.settings-card .label {
+  margin-right: 0.3em;
+}
+
+input[type="number"] {
+  width: 4em;
+  background: rgba(255, 255, 255, 0.9);
+  color: #333;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-size: 0.75rem;
+  font-family: inherit;
+}
+
+/* Navigation */
+nav {
+  margin-top: 1.2rem;
+  display: flex;
+  gap: 1rem;
+}
+
+nav a {
+  color: #36c;
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+
+nav a:hover {
+  text-decoration: underline;
+}
+
+nav a.active {
+  color: #111;
+  font-weight: 600;
+}
